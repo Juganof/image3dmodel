@@ -30,6 +30,12 @@ def main():
     )
     logger = logging.getLogger(__name__)
 
+    # Ensure the Gemini API key is available before running any pipeline steps.
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        logger.error("[error] Missing GOOGLE_API_KEY or GEMINI_API_KEY environment variable.")
+        return
+
     try:
         from gemini_utils import generate_makerworld_idea, generate_image_with_imagen
         from hitem3d_client import process_image_with_hitem3d
