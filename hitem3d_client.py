@@ -8,15 +8,14 @@ import time
 
 def _ensure_browser_deps(logger: logging.Logger) -> None:
     """Best-effort install of Playwright browser binaries and system deps."""
-    cmds = [
-        ["playwright", "install", "chromium"],
-        ["playwright", "install-deps"],
-    ]
-    for cmd in cmds:
-        try:
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except Exception as exc:
-            logger.warning("[hitem3d] %s failed: %s", " ".join(cmd), exc)
+    cmd = ["playwright", "install", "--with-deps", "chromium"]
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except Exception as exc:
+        logger.warning("[hitem3d] %s failed: %s", " ".join(cmd), exc)
+        raise RuntimeError(
+            "Playwright system dependencies are missing and automatic installation failed."
+        ) from exc
 
 def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=None, wait_minutes: int = 20, headless: bool = True):
     """
@@ -37,9 +36,15 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
         try:
             browser = p.chromium.launch(headless=headless)
         except Exception as exc:
-            if "missing dependencies" in str(exc):
+            if "missing dependencies" in str(exc).lower():
                 logger.info("[hitem3d] Installing Playwright browser dependencies ...")
-                _ensure_browser_deps(logger)
+                try:
+                    _ensure_browser_deps(logger)
+                except Exception:
+                    raise RuntimeError(
+                        "Playwright browser dependencies could not be installed."
+                        " Install them manually with 'playwright install-deps'."
+                    )
                 browser = p.chromium.launch(headless=headless)
             else:
                 raise
