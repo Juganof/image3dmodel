@@ -22,6 +22,7 @@ This small Python app does three things:
 - Python 3.10+
 - `pip install -r requirements.txt`
 - Install Playwright browsers: `python -m playwright install chromium`
+- Install browser system deps (may require sudo): `playwright install-deps`
 
 ### 2) Environment
 
@@ -81,6 +82,7 @@ Outputs land in `output/`:
 - **Playwright timeouts**: Increase `--timeout` or set `HITEM3D_WAIT_MINUTES`.
 - **No download links found**: UI may have changed or login/credits may be required. Run with `--headful` to see what's happening.
 - **Gemini key issues**: Verify `GEMINI_API_KEY` is exported in your shell or `.env` and that your account has access to Imagen 4 preview.
+- **Missing browser libraries**: If Playwright fails to launch, run `playwright install-deps` to install required system packages.
 
 ---
 
