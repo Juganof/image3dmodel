@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Image→3D Pipeline</title>
+</head>
+<body>
+  <button id="run">Run Pipeline</button>
+  <pre id="logs"></pre>
+  <script>
+    async function fetchLogs() {
+      const res = await fetch('/logs');
+      if (res.ok) {
+        document.getElementById('logs').textContent = await res.text();
+      }
+      setTimeout(fetchLogs, 1000);
+    }
+    document.getElementById('run').onclick = async () => {
+      await fetch('/run', {method: 'POST'});
+    };
+    fetchLogs();
+  </script>
+</body>
+</html>

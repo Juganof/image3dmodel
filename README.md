@@ -64,6 +64,15 @@ Outputs land in `output/`:
 - `model.*` – one or more of GLB/OBJ/STL, depending on availability
 - `run.log` – log file for the latest run (overwritten each time)
 
+### Web interface (Codespaces)
+
+You can run the pipeline from a simple Flask web page.
+
+1. Install dependencies: `pip install -r requirements.txt`
+2. Start the server: `python server.py`
+3. In GitHub Codespaces, open the forwarded port (defaults to 8000) to view the page.
+4. Click **Run Pipeline** to launch `app.py`; logs stream from `output/run.log`.
+
 ---
 
 ## How it works
