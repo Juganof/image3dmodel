@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 from pathlib import Path
+import logging
 import re
 import time
 
@@ -12,6 +13,7 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
     - downloads available formats into out_dir
     Returns list of downloaded file paths.
     """
+    logger = logging.getLogger(__name__)
     prefer_formats = prefer_formats or ["glb","obj","stl"]
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -23,11 +25,11 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
         page = context.new_page()
         page.set_default_timeout(60_000)  # 60s default per action
 
-        print("[hitem3d] Opening site ...")
+        logger.info("[hitem3d] Opening site ...")
         page.goto("https://hitem3d.ai/", wait_until="domcontentloaded")
 
         # Try to find a file input; site is dynamic, so wait a bit and query common selectors.
-        print("[hitem3d] Looking for upload control ...")
+        logger.info("[hitem3d] Looking for upload control ...")
         file_input = None
         candidate_selectors = [
             'input[type="file"]',
@@ -44,7 +46,7 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
         if not file_input:
             raise RuntimeError("Unable to locate file input on hitem3d.ai. Try --headful to inspect selectors.")
 
-        print(f"[hitem3d] Uploading {image_path} ...")
+        logger.info("[hitem3d] Uploading %s ...", image_path)
         file_input.set_input_files(image_path)
 
         # Wait for generation & links
@@ -55,7 +57,7 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
             anchors = page.eval_on_selector_all("a", "els => els.map(e => ({href: e.href, text: e.innerText}))")
             return [a for a in anchors if a.get("href") and pat.search(a["href"] or "")]
 
-        print("[hitem3d] Waiting for generation & download links ...")
+        logger.info("[hitem3d] Waiting for generation & download links ...")
         found_any = False
         while time.time() < deadline:
             page.wait_for_timeout(2000)
@@ -65,7 +67,7 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
                 break
 
         if not found_any:
-            print("[hitem3d] No download links appeared before timeout.")
+            logger.warning("[hitem3d] No download links appeared before timeout.")
             return downloaded_paths
 
         # Try to click preferred formats in order.
@@ -87,9 +89,9 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
                     save_path = str((Path(out_dir) / f"model.{ext}").resolve())
                     download.save_as(save_path)
                     downloaded_paths.append(save_path)
-                    print(f"[hitem3d] Downloaded {ext.upper()} → {save_path}")
+                    logger.info("[hitem3d] Downloaded %s → %s", ext.upper(), save_path)
             except Exception as e:
-                print(f"[hitem3d] Download {ext} failed: {e}")
+                logger.warning("[hitem3d] Download %s failed: %s", ext, e)
 
         context.close()
         browser.close()

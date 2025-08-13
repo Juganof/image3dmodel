@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -19,6 +20,16 @@ def main():
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        handlers=[
+            logging.FileHandler(out_dir / "run.log", mode="w", encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
+    )
+    logger = logging.getLogger(__name__)
+
     # 1) Generate a MakerWorld-ready idea (if not provided)
     if args.idea:
         idea_text = args.idea.strip()
@@ -27,7 +38,7 @@ def main():
 
     idea_path = out_dir / "idea.txt"
     idea_path.write_text(idea_text, encoding="utf-8")
-    print(f"[ok] Saved idea → {idea_path}")
+    logger.info("[ok] Saved idea → %s", idea_path)
 
     # 2) Craft an image prompt if not provided
     if args.image_prompt:
@@ -43,7 +54,7 @@ def main():
     # 2) Generate image with Imagen 4
     img_path = out_dir / "imagen.png"
     generate_image_with_imagen(prompt, img_path)
-    print(f"[ok] Saved generated image → {img_path}")
+    logger.info("[ok] Saved generated image → %s", img_path)
 
     # 3) Upload to Hitem3D and download result(s)
     formats = [f.strip().lower() for f in args.formats.split(",") if f.strip()]
@@ -56,9 +67,11 @@ def main():
     )
 
     if downloaded:
-        print("[ok] Downloaded:", ", ".join(downloaded))
+        logger.info("[ok] Downloaded: %s", ", ".join(downloaded))
     else:
-        print("[warn] No model files were downloaded. Try --headful to debug, increase --timeout, or check site requirements.")
+        logger.warning(
+            "[warn] No model files were downloaded. Try --headful to debug, increase --timeout, or check site requirements."
+        )
 
 if __name__ == "__main__":
     main()

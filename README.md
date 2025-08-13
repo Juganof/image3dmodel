@@ -61,6 +61,7 @@ Outputs land in `output/`:
 - `idea.txt` – MakerWorld-ready idea
 - `imagen.png` – generated reference image
 - `model.*` – one or more of GLB/OBJ/STL, depending on availability
+- `run.log` – log file for the latest run (overwritten each time)
 
 ---
 
