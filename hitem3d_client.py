@@ -51,7 +51,15 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
 
         # Wait for generation & links
         deadline = time.time() + (wait_minutes * 60)
-        pat = re.compile(r'\.(?:' + "|".join([re.escape(ext) for ext in ["glb","obj","stl"]]) + r')$', re.I)
+        # Match any of the preferred extensions when scanning the page for
+        # downloadable links. Previously this was hard-coded to GLB/OBJ/STL,
+        # which meant supplying a different list via ``prefer_formats`` would
+        # have no effect. Build the pattern dynamically so callers can extend
+        # or override the formats.
+        pat = re.compile(
+            r"\.(?:" + "|".join([re.escape(ext) for ext in prefer_formats]) + r")$",
+            re.I,
+        )
 
         def find_href_links():
             anchors = page.eval_on_selector_all("a", "els => els.map(e => ({href: e.href, text: e.innerText}))")
