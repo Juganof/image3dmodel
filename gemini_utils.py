@@ -4,23 +4,28 @@ from google.genai import types
 from PIL import Image
 from io import BytesIO
 
-DEFAULT_IDEA_SYSTEM = open("prompts/makerworld_idea_prompt.txt","r",encoding="utf-8").read()
-
+# Reads either name; set one of these in Replit Secrets.
 def _client():
-    # The client picks up GEMINI_API_KEY from the environment.
-    return genai.Client()
+    key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if not key:
+        raise RuntimeError("Set GOOGLE_API_KEY or GEMINI_API_KEY in Secrets.")
+    return genai.Client(api_key=key)
 
+# ---- Text idea (Gemini) ----
 def generate_makerworld_idea() -> str:
     client = _client()
+    prompt = open("prompts/makerworld_idea_prompt.txt", "r", encoding="utf-8").read()
     resp = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[{"role":"user","parts":[{"text": DEFAULT_IDEA_SYSTEM}]}],
+        model="gemini-2.0-flash",          # safe, widely available
+        contents=[{"role": "user", "parts": [{"text": prompt}]}],
+        # keep config minimal for compatibility with older SDKs
         config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_budget=0)
+            temperature=0.6,
         ),
     )
     return (resp.text or "").strip()
 
+# ---- Image (Imagen 4) ----
 def generate_image_with_imagen(prompt: str, out_path: str, n_images: int = 1, aspect_ratio: str = "1:1"):
     client = _client()
     resp = client.models.generate_images(
