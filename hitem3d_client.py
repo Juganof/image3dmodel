@@ -2,7 +2,21 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 from pathlib import Path
 import logging
 import re
+import subprocess
 import time
+
+
+def _ensure_browser_deps(logger: logging.Logger) -> None:
+    """Best-effort install of Playwright browser binaries and system deps."""
+    cmds = [
+        ["playwright", "install", "chromium"],
+        ["playwright", "install-deps"],
+    ]
+    for cmd in cmds:
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except Exception as exc:
+            logger.warning("[hitem3d] %s failed: %s", " ".join(cmd), exc)
 
 def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=None, wait_minutes: int = 20, headless: bool = True):
     """
@@ -20,7 +34,15 @@ def process_image_with_hitem3d(image_path: str, out_dir: str, prefer_formats=Non
     downloaded_paths = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless)
+        try:
+            browser = p.chromium.launch(headless=headless)
+        except Exception as exc:
+            if "missing dependencies" in str(exc):
+                logger.info("[hitem3d] Installing Playwright browser dependencies ...")
+                _ensure_browser_deps(logger)
+                browser = p.chromium.launch(headless=headless)
+            else:
+                raise
         context = browser.new_context(accept_downloads=True)
         page = context.new_page()
         page.set_default_timeout(60_000)  # 60s default per action
